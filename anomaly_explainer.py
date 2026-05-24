@@ -4,7 +4,11 @@ from sklearn.ensemble import IsolationForest
 import anthropic
 import json
 
-# --- 1. Simulate production spreadsheet data ---
+# --- Step 0.1: Setup - Simulate production spreadsheet data ---
+# unit_id | test_voltage | calibration_offset | cycle_time_sec | qc_pass
+# UNIT-000 |    12.05     |       0.51         |      44.3      |    1
+# UNIT-001 |    11.89     |       0.48         |      47.1      |    0
+
 np.random.seed(42)
 n = 50
 
@@ -21,7 +25,7 @@ df.loc[5, "test_voltage"] = 18.7       # way too high
 df.loc[12, "cycle_time_sec"] = 120     # 2x normal cycle time
 df.loc[23, "calibration_offset"] = -1.2  # negative and far off
 
-# --- 2. Run Isolation Forest ---
+# --- Step 0.2. Run Isolation Forest ---
 features = ["test_voltage", "calibration_offset", "cycle_time_sec", "qc_pass"]
 model = IsolationForest(contamination=0.05, random_state=42)
 df["anomaly"] = model.fit_predict(df[features])
@@ -29,7 +33,7 @@ df["anomaly"] = model.fit_predict(df[features])
 flagged = df[df["anomaly"] == -1].copy()
 print(f"Flagged {len(flagged)} rows for review:\n{flagged.to_string()}\n")
 
-# --- 3. Build prompt with flagged data as context ---
+# --- Step 1. Build prompt with flagged data as context ---
 column_context = """
 Column definitions:
 - test_voltage: expected range 11.5–12.5V
@@ -55,7 +59,7 @@ Flagged units:
 Respond in plain language. Be specific about which values are out of range.
 """
 
-# --- 4. Send to Claude, print response ---
+# --- Step 2: Model Execution ---
 client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
 message = client.messages.create(
@@ -64,5 +68,6 @@ message = client.messages.create(
     messages=[{"role": "user", "content": prompt}]
 )
 
+# --- Step 3 & 4: Response and Next Step ---
 print("=== Claude's Analysis ===")
 print(message.content[0].text)
