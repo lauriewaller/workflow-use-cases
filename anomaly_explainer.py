@@ -1,8 +1,13 @@
-import pandas as pd
-import numpy as np
-from sklearn.ensemble import IsolationForest
-import anthropic
 import json
+from pathlib import Path
+
+import anthropic
+import numpy as np
+import pandas as pd
+from dotenv import load_dotenv
+from sklearn.ensemble import IsolationForest
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # --- Step 0.1: Setup - Simulate production spreadsheet data ---
 # unit_id | test_voltage | calibration_offset | cycle_time_sec | qc_pass
